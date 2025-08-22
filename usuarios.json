@@ -1,0 +1,18 @@
+[
+    {
+        "id": "7d22953a-ca4b-426c-8094-10bdc9302bb1",
+        "nome": "luan",
+        "email": "luan@gmail.com",
+        "cpf": "12671766565",
+        "idade": "21",
+        "senha": "654321"
+    },
+    {
+        "id": "38c56668-9613-45f0-85f9-a767c2322d79",
+        "nome": "Davi",
+        "email": "davi@gmail.com",
+        "cpf": "90889807089",
+        "idade": "20",
+        "senha": "123456"
+    }
+]
