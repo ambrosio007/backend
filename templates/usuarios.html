@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/usuarios.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <title>Usuários Cadastrados</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Usuários Cadastrados</h1>
+        {% if usuarios %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Idade</th>
+                        <th>CPF</th>
+                        <th>Email</th>
+                        <th>Senha</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                        <tr id="linha-{{ usuario.id }}">
+                            <td>{{ usuario.nome }}</td>
+                            <td>{{ usuario.idade }}</td>
+                            <td>{{ usuario.cpf }}</td>
+                            <td>{{ usuario.email }}</td>
+                            <td>{{ usuario.senha }}</td>
+                            <td>
+                                <button onclick="window.location.href='/editar-usuario/{{ usuario.id }}'">
+                                    <i class="fa-solid fa-pencil"></i>
+                                    Editar
+                                </button>
+                                <button style="cursor: pointer; background-color: brown;" onclick="excluirUsuario('{{usuario.id}}', '{{usuario.cpf}}')">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    Excluir
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Nenhum usuário cadastrado ainda.</p>
+        {% endif %}
+        <br><br>
+        <button onclick="window.location.href='/'">Voltar para o formulário de cadastro</button>
+    </div>
+    
+    <script src="/static/usuarios.js"></script>
+
+</body>
+</html>

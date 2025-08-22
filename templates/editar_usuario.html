@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/form.css">
+    <title>Editar Usuário</title>
+</head>
+<body>
+    <div class="container">
+        <form id="form-edicao">
+            <h1>Editar Usuário</h1>
+            <p>ID do usuário: <span id="user-id">{{ usuario.id }}</span></p>
+
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" value="{{ usuario.nome }}" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="{{ usuario.email }}" required>
+
+            <label for="idade">Idade:</label>
+            <input type="number" id="idade" name="idade" value="{{ usuario.idade }}" required>
+            
+            <label for="senha">Nova Senha:</label>
+            <input type="password" id="senha" name="senha" minlength="6" placeholder="Deixar em branco caso não deseje alterar a senha">
+            <div class="button">
+                <button type="submit">Atualizar</button>
+                <button onclick="window.location.href='/listar-usuarios'">Ver Usuários Cadastrados</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="/static/editar.js"></script>
+    
+</body>
+</html>

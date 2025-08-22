@@ -1,0 +1,71 @@
+/* Estilização Geral do Corpo da Página */
+body {
+ /* Ocupa a altura total da tela */
+    background: linear-gradient(-120deg,
+    rgb(129, 1, 129), rgb(32, 0, 32));
+    font-family: Arial, sans-serif; /* Adicionado para garantir uma fonte padrão */
+    margin: 0; /* Remove a margem padrão do navegador */
+}
+
+/* Contêiner principal para centralizar o formulário */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100vh; /* Ocupa a altura total da tela */
+}
+
+/* Estilização do Formulário */
+form {
+    display: flex;
+    flex-direction: column;
+    width: clamp(300px, 60%, 700px); /* Usa uma largura mais responsiva */
+    padding: 20px; /* Unificado para um espaçamento consistente */
+    border-radius: 8px;
+    background-color: rgb(232, 232, 232);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Adiciona uma sombra suave */
+}
+
+/* Estilização dos Rótulos (Labels) */
+label {
+    margin-bottom: 5px; /* Adiciona espaço entre o rótulo e o campo de entrada */
+    font-weight: bold;
+    color: #444;
+}
+
+/* Estilização dos Campos de Entrada */
+input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px; /* Adiciona espaço entre os campos */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Garante que o padding não afete a largura total */
+}
+
+/* Contêiner dos Botões */
+.button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px; /* Adiciona espaço entre os botões */
+    margin-top: 10px;
+}
+
+/* Estilização dos Botões */
+.button button {
+    width: 100%; /* Permite que os botões se adaptem ao contêiner */
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: rgb(93, 30, 152);
+    color: aliceblue;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Efeito de transição suave */
+    font-weight: bold;
+}
+
+.button button:hover {
+    background-color: rgb(72, 29, 112);
+}
