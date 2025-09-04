@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, session, redirec
 
 from repository.usuario_repository import UsuarioRepositorio
 
-from servi.usuario_service import UsuarioService
+from service.usuario_service import UsuarioService
 
 usuario_bp = Blueprint('usuario', __name__)
 
