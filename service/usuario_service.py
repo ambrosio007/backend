@@ -1,5 +1,5 @@
 from model.usuario import Usuario
-from repository.usuario_repository import UsuarioRepositorio
+from repository.usuario_repository import UsuarioRepository
 import bcrypt
 
 class UsuarioService:

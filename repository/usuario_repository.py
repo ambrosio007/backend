@@ -1,79 +1,94 @@
-import json
-import os
+import mysql.connector
 
-class UsuarioRepositorio:
-    Arquivo = "usuarios.json"
+def get_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="lafj2001@",   # sua senha aqui
+        database="crud_db"
+    )
 
-    @classmethod
-    def carregar_usuarios(cls):
+class UsuarioRepository:
+
+    @staticmethod
+    def carregar_usuarios():
+        """Retorna todos os usuários do banco."""
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM usuarios")
+        usuarios = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return usuarios
+
+    @staticmethod
+    def salvar_usuario(usuario):
+        conn = get_connection()
+        cursor = conn.cursor()
         try:
-            if os.path.exists(cls.Arquivo):
-                with open(cls.Arquivo, "r", encoding="utf-8") as arquivo:
-                    return json.load(arquivo)
-            else:
-                return []
-        except (IOError, json.JSONDecodeError):
-            return []
-
-    @classmethod
-    def salvar_usuario(cls, usuario):
-        usuarios = cls.carregar_usuarios()
-        try:
-            usuarios.append(usuario)
-            with open(cls.Arquvio, "w", encoding="utf-8") as arquivo:
-                json.dump(usuarios, arquivo, indent=4)
+            cursor.execute("""
+                INSERT INTO usuarios (id, nome, cpf, email, idade, senha, perfil)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
+                usuario["id"],
+                usuario["nome"],
+                usuario["cpf"],
+                usuario["email"],
+                usuario["idade"],
+                usuario["senha"],
+                usuario.get("perfil", "user")  # padrão "user"
+            ))
+            conn.commit()
             return True
-        except (IOError, TypeError):
+        except Exception as e:
+            print("Erro ao salvar usuário:", e)
+            return False
+        finally:
+            cursor.close()
+            conn.close()
+
+    @staticmethod
+    def buscar_por_email(email):
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM usuarios WHERE email = %s", (email,))
+        usuario = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return usuario
+
+    @staticmethod
+    def deletar_usuario_util(id):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+        conn.commit()
+        deleted = cursor.rowcount
+        cursor.close()
+        conn.close()
+        return deleted > 0
+
+    @staticmethod
+    def atualizar_usuario(id_usuario, novos_dados):
+        campos = []
+        valores = []
+
+        for campo in ["nome", "cpf", "email", "idade", "senha", "perfil"]:
+            if campo in novos_dados:
+                campos.append(f"{campo} = %s")
+                valores.append(novos_dados[campo])
+
+        if not campos:  
             return False
 
-    @classmethod
-    def deletar_usuario_util(cls,id):
-        usuarios = cls.carregar_usuarios()
-        usuarios_filtrados = [usuario for usuario in usuarios if usuario.get("id") != id]
-            
-        if len(usuarios) == len(usuarios_filtrados):
-            return False
-            
-        try:
-            with open(cls.Arquivo, "w", encoding="utf-8") as arquivo:
-                json.dump(usuarios_filtrados, arquivo, indent=4)
-            return True
-        except (IOError, TypeError):
-                return False
-        
-    @classmethod
-    def atualizar_usuario(cls, id_usuario, novos_dados):
+        sql = f"UPDATE usuarios SET {', '.join(campos)} WHERE id = %s"
+        valores.append(id_usuario)
 
-        usuarios = cls.carregar_usuarios()
-        usuario_encontrado = False
-        for i, usuario in enumerate(usuarios):
-            if str(usuario['id']) == str(id_usuario): 
-                usuarios[i].update(novos_dados)
-                usuario_encontrado = True
-                break
-            
-        if not usuario_encontrado:
-            return False 
-            
-        try:
-            with open(cls.Arquivo, "w", encoding="utf-8") as f:
-                json.dump(usuarios, f, indent=4)
-            return True
-        except (IOError, TypeError):
-            return False
-        
-    @classmethod
-    def buscar_por_id(cls, id):
-        usuarios = cls.carregar_usuarios()
-        for usuario in usuarios:
-            if str(usuario.get("id")) == str(id):
-                return usuario
-        return None 
-        
-    @classmethod
-    def buscar_por_email(cls, email):
-        usuarios = cls.carregar_usuarios()
-        for usuario in usuarios:
-            if usuario.get("email") == email:
-                return usuario
-        return None 
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(sql, tuple(valores))
+        conn.commit()
+        updated = cursor.rowcount
+        cursor.close()
+        conn.close()
+        return updated > 0

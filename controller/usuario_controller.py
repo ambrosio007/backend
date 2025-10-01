@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 
-from repository.usuario_repository import UsuarioRepositorio
+import uuid
+
+from repository.usuario_repository import UsuarioRepository
 
 from service.usuario_service import UsuarioService
 
@@ -31,7 +33,7 @@ def cadastrar_usuario():
         "senha": senha
     }
     
-    status = UsuarioRepositorio.salvar_usuario(usuario)
+    status = UsuarioRepository.salvar_usuario(usuario)
     
     if status:
         return f"Usuário '{usuario['nome']}' cadastrado com sucesso!"
@@ -40,17 +42,17 @@ def cadastrar_usuario():
 
 @usuario_bp.route("/usuarios/json")
 def usuarios_json():
-    usuarios = UsuarioRepositorio.carregar_usuarios()
+    usuarios = UsuarioRepository.carregar_usuarios()
     return jsonify(usuarios)
 
 @usuario_bp.route("/listar-usuarios")
 def listar_usuarios():
-    usuarios = UsuarioRepositorio.carregar_usuarios()
+    usuarios = UsuarioRepository.carregar_usuarios()
     return render_template("usuarios.html", usuarios=usuarios)
 
 @usuario_bp.route("/usuarios/<id>", methods=["DELETE"])
 def excluir_usuario(id):
-    sucesso = UsuarioRepositorio.deletar_usuario_util(id)
+    sucesso = UsuarioRepository.deletar_usuario_util(id)
     if sucesso:
         return jsonify({"message": "Usuário excluído com sucesso!"}), 200
     else:
@@ -58,7 +60,7 @@ def excluir_usuario(id):
 
 @usuario_bp.route("/editar-usuario/<id>")
 def editar_usuario(id):
-    usuarios = UsuarioRepositorio.carregar_usuarios()
+    usuarios = UsuarioRepository.carregar_usuarios()
     usuario = next((u for u in usuarios if str(u['id']) == str(id)), None)
     if usuario:
         return render_template("editar_usuario.html", usuario=usuario)
@@ -71,7 +73,7 @@ def atualizar_usuario_api(id):
     if not novos_dados:
         return jsonify({"message": "Dados inválidos!"}), 400
     
-    sucesso = UsuarioRepositorio.atualizar_usuario(id, novos_dados)
+    sucesso = UsuarioRepository.atualizar_usuario(id, novos_dados)
     if sucesso:
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
     else:
@@ -84,7 +86,7 @@ def login_post():
     email = request.form.get("email")
     senha = request.form.get("senha")
 
-    usuario = UsuarioRepositorio.buscar_por_email(email)
+    usuario = UsuarioRepository.buscar_por_email(email)
     if usuario and bcrypt.checkpw(senha.encode('utf-8'), usuario['senha'].encode('utf-8')):
         session['usuario_id'] = usuario['id']
         session['perfil'] = usuario['perfil']
@@ -104,7 +106,7 @@ def buscar_usuarios_json():
         return "Acesso negado! Faça login primeiro.", 401
     if session["perfil"] != "admin":
         return "Acesso negado! Você não tem permissão.", 403
-    return jsonify(UsuarioRepositorio.carregar_usuarios())
+    return jsonify(UsuarioRepository.carregar_usuarios())
 
 @usuario_bp.route("/usuarios")
 def buscar_usuarios():
@@ -112,14 +114,14 @@ def buscar_usuarios():
         return "Acesso negado! Faça login primeiro.", 401
     if session["perfil"] != "admin":
         return "Acesso negado! Você não tem permissão.", 403
-    usuarios = UsuarioRepositorio.carregar_usuarios()
+    usuarios = UsuarioRepository.carregar_usuarios()
     return render_template("usuarios.html", usuarios=usuarios)
 
 @usuario_bp.route("/usuarios/<id>", methods=["DELETE"])
 def excluir_usuario_protegido(id):
     if session.get("perfil") != "admin":
         return "Acesso negado! Você não tem permissão.", 403
-    if UsuarioRepositorio.deletar_usuario_util(id):
+    if UsuarioRepository.deletar_usuario_util(id):
         return jsonify({"message": "Usuário excluído com sucesso!"}), 200
     return jsonify({"message": "Usuário não encontrado ou erro na exclusão!"}), 404
 
@@ -129,7 +131,7 @@ def atualizar_usuario_protegido():
         return "Acesso negado! Faça login primeiro.", 401
     
     usuario_edit = request.get_json()
-    if UsuarioRepositorio.atualizar_usuario(session["id_usuario"], usuario_edit):
+    if UsuarioRepository.atualizar_usuario(session["id_usuario"], usuario_edit):
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
     return jsonify({"message": "Usuário não encontrado ou erro na atualização!"}), 404
 
