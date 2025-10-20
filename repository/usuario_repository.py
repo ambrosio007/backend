@@ -4,7 +4,7 @@ def get_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="lafj2001@",   # sua senha aqui
+        password="root",   # sua senha aqui
         database="crud_db"
     )
 
@@ -21,6 +21,8 @@ class UsuarioRepository:
         conn.close()
         return usuarios
 
+    # C:\Users\alunonoite\backend\repository\usuario_repository.py (CORREÇÃO FINAL)
+
     @staticmethod
     def salvar_usuario(usuario):
         conn = get_connection()
@@ -30,16 +32,18 @@ class UsuarioRepository:
                 INSERT INTO usuarios (id, nome, cpf, email, idade, senha, perfil)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
-                usuario["id"],
-                usuario["nome"],
-                usuario["cpf"],
-                usuario["email"],
-                usuario["idade"],
-                usuario["senha"],
-                usuario.get("perfil", "user")  # padrão "user"
+                # 💥 Mude a sintaxe para colchetes, esperando um dicionário 💥
+                usuario['id'],
+                usuario['nome'], 
+                usuario['cpf'], 
+                usuario['email'],
+                usuario['idade'],
+                usuario['senha'],
+                usuario.get('perfil', 'user') 
             ))
             conn.commit()
             return True
+        # ... (o resto do código)
         except Exception as e:
             print("Erro ao salvar usuário:", e)
             return False

@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, jsonify, session, redirec
 
 import uuid
 
+import bcrypt
+
 from repository.usuario_repository import UsuarioRepository
 
 from service.usuario_service import UsuarioService
@@ -18,27 +20,15 @@ def login():
 
 @usuario_bp.route("/cadastro-usuario", methods=["POST"])
 def cadastrar_usuario():
-    nome = request.form.get("nome")
-    email = request.form.get("email")
-    idade = request.form.get("idade")
-    cpf = request.form.get("cpf")
-    senha = request.form.get("senha")
+    dados = request.form.to_dict()
     
-    usuario = {
-        "id": str(uuid.uuid4()),
-        "nome": nome,
-        "email": email,
-        "cpf": cpf,
-        "idade": idade,
-        "senha": senha
-    }
-    
-    status = UsuarioRepository.salvar_usuario(usuario)
+    # 💥 AGORA CHAMA O SERVICE! 💥
+    status = UsuarioService.cadastrar(dados)
     
     if status:
-        return f"Usuário '{usuario['nome']}' cadastrado com sucesso!"
+        return f"Usuário '{dados.get('nome')}' cadastrado com sucesso!"
     else:
-        return "Não foi possível cadastrar o usuário!"
+        return "Não foi possível cadastrar o usuário!", 400
 
 @usuario_bp.route("/usuarios/json")
 def usuarios_json():
@@ -59,24 +49,36 @@ def excluir_usuario(id):
         return jsonify({"message": "Usuário não encontrado ou erro na exclusão!"}), 404
 
 @usuario_bp.route("/editar-usuario/<id>")
-def editar_usuario(id):
+def editar_usuario(id): # Mudei o nome para evitar confusão
     usuarios = UsuarioRepository.carregar_usuarios()
     usuario = next((u for u in usuarios if str(u['id']) == str(id)), None)
     if usuario:
         return render_template("editar_usuario.html", usuario=usuario)
     else:
         return "Usuário não encontrado!", 404
-
+    
 @usuario_bp.route("/usuarios/<id>", methods=["PUT"])
 def atualizar_usuario_api(id):
-    novos_dados = request.get_json()
+    import bcrypt # Certifique-se de que está importado no topo do arquivo
+    
+    novos_dados = request.get_json() 
+    
     if not novos_dados:
         return jsonify({"message": "Dados inválidos!"}), 400
+    
+    # Lógica de criptografia da senha (se a senha estiver sendo atualizada)
+    if 'senha' in novos_dados:
+        senha_hash = bcrypt.hashpw(
+            novos_dados['senha'].encode('utf-8'), 
+            bcrypt.gensalt()
+        )
+        novos_dados['senha'] = senha_hash.decode('utf-8')
     
     sucesso = UsuarioRepository.atualizar_usuario(id, novos_dados)
     if sucesso:
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
     else:
+        # Nota: Se o Postman receber este erro, pode ser que o ID não exista ou que haja um erro no SQL do Repositório.
         return jsonify({"message": "Usuário não encontrado ou erro na atualização!"}), 404
     
 # ----------------- Login / Logout ----------------- #
