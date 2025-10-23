@@ -26,62 +26,60 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('login-form');
-            const messageArea = document.getElementById('message-area');
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginForm = document.getElementById('login-form');
+        const messageArea = document.getElementById('message-area');
 
-            loginForm.addEventListener('submit', function(event) {
-                event.preventDefault(); // <-- CRUCIAL: Impede o envio tradicional
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // <-- CRUCIAL: Impede o envio tradicional
 
-                messageArea.textContent = ''; // Limpa mensagens anteriores
+            messageArea.textContent = ''; // Limpa mensagens anteriores
 
-                // Coleta os dados do formulário
-                const formData = new FormData(loginForm);
-                
-                // 1. Faz a requisição POST para a rota /login do Flask
-                fetch('{{ url_for("usuario.login_post") }}', {
-                    method: 'POST',
-                    body: formData // Envia os dados do formulário
-                })
-                .then(response => {
-                    // Retorna o JSON junto com o status da resposta
-                    return response.json().then(data => ({
-                        status: response.status,
-                        body: data
-                    }));
-                })
-                .then(result => {
-                    // 2. Verifica se o login foi bem-sucedido (status 200) e se o token existe
-                    if (result.status === 200 && result.body.access_token) {
-                        
-                        // 🚀 ARMAZENA O TOKEN NO LOCAL STORAGE
-                        localStorage.setItem('access_token', result.body.access_token);
-                        
-                        messageArea.style.color = 'green';
-                        messageArea.textContent = result.body.message || "Login bem-sucedido!";
-                        
-                        // 🚀 REDIRECIONA PARA A ÁREA PROTEGIDA
-                        // Se o login foi bem-sucedido, redireciona diretamente para a lista de usuários.
-                        setTimeout(() => {
-                            // 💡 ALTERAÇÃO: Redireciona diretamente para a rota de listagem protegida
-                            window.location.href = '{{ url_for("usuario.listar_usuarios_protegido") }}'; 
-                        }, 500); 
-                        // ...
-                                                
-                    } else {
-                        // Trata a falha do login (ex: 401 - Email ou senha incorretos)
-                        messageArea.style.color = 'red';
-                        messageArea.textContent = result.body.message || "Erro: Credenciais inválidas.";
-                        localStorage.removeItem('access_token'); // Limpa qualquer token antigo por segurança
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro de rede:', error);
+            // Coleta os dados do formulário
+            const formData = new FormData(loginForm);
+            
+            // 1. Faz a requisição POST para a rota /login do Flask
+            fetch('{{ url_for("usuario.login_post") }}', {
+                method: 'POST',
+                body: formData // Envia os dados do formulário
+            })
+            .then(response => {
+                // Retorna o JSON junto com o status da resposta
+                return response.json().then(data => ({
+                    status: response.status,
+                    body: data
+                }));
+            })
+            .then(result => {
+                // 2. Verifica se o login foi bem-sucedido (status 200) e se o token existe
+                if (result.status === 200 && result.body.access_token) {
+
+                    localStorage.setItem('access_token', result.body.access_token);
+                    
+                    messageArea.style.color = 'green';
+                    messageArea.textContent = result.body.message || "Login bem-sucedido!";
+                    
+                    // **ALTERAÇÃO AQUI:** Redireciona para /dashboard, que verifica o perfil no servidor.
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("usuario.dashboard") }}'; 
+                    }, 500); 
+                    // ...
+                                
+                } else {
+                    // Trata a falha do login (ex: 401 - Email ou senha incorretos)
                     messageArea.style.color = 'red';
-                    messageArea.textContent = "Erro de conexão com o servidor.";
-                });
+                    messageArea.textContent = result.body.message || "Erro: Credenciais inválidas.";
+                    localStorage.removeItem('access_token'); // Limpa qualquer token antigo por segurança
+                }
+            })
+            .catch(error => {
+                console.error('Erro de rede:', error);
+                messageArea.style.color = 'red';
+                messageArea.textContent = "Erro de conexão com o servidor.";
             });
         });
-    </script>
+    });
+</script>
+
 </body>
 </html>

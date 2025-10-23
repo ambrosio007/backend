@@ -205,13 +205,10 @@ def dashboard():
     """
     claims = get_jwt()
     
-    # Verifica se o usuário logado tem o perfil de administrador
     if claims.get("perfil") == "admin":
-        # Redireciona para a rota protegida de listagem de usuários
-        # O nome do endpoint é 'usuario.listar_usuarios_protegido'
+
         return redirect(url_for('usuario.listar_usuarios_protegido'))
     
-    # Se não for admin, você pode redirecionar para a home ou uma página de perfil pessoal
     else:
-        # Sugestão: Redireciona para a página inicial (home)
+
         return redirect(url_for('usuario.home'))
