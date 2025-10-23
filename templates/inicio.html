@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bem-vindo ao Sistema</title>
+    <!-- Carregando Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Definindo a fonte Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg bg-white p-10 md:p-12 shadow-2xl rounded-2xl border border-gray-100 text-center">
+        
+        <div class="mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-2">
+                Acesse o Sistema
+            </h1>
+            <p class="text-lg text-gray-500">
+                Escolha uma das opções abaixo para continuar.
+            </p>
+        </div>
+
+        <div class="space-y-6">
+
+            <a href="{{ url_for('usuario.login') }}" class="block">
+                <button class="w-full py-4 px-6 bg-indigo-600 text-white font-bold text-xl rounded-xl shadow-lg hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                    Entrar (Login)
+                </button>
+            </a>
+
+            <a href="{{ url_for('usuario.cadastro_usuario_page') }}" class="block">
+                <button class="w-full py-4 px-6 bg-gray-200 text-gray-800 font-bold text-xl rounded-xl shadow-md hover:bg-gray-300 transition duration-300 ease-in-out transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-gray-400">
+                    Cadastrar (Novo Usuário)
+                </button>
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>

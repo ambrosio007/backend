@@ -21,8 +21,6 @@ class UsuarioRepository:
         conn.close()
         return usuarios
 
-    # C:\Users\alunonoite\backend\repository\usuario_repository.py (CORREÇÃO FINAL)
-
     @staticmethod
     def salvar_usuario(usuario):
         conn = get_connection()
@@ -32,7 +30,6 @@ class UsuarioRepository:
                 INSERT INTO usuarios (id, nome, cpf, email, idade, senha, perfil)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
-                # 💥 Mude a sintaxe para colchetes, esperando um dicionário 💥
                 usuario['id'],
                 usuario['nome'], 
                 usuario['cpf'], 
@@ -43,13 +40,22 @@ class UsuarioRepository:
             ))
             conn.commit()
             return True
-        # ... (o resto do código)
         except Exception as e:
             print("Erro ao salvar usuário:", e)
             return False
         finally:
             cursor.close()
             conn.close()
+
+    @staticmethod
+    def buscar_por_id(id):
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SLECT * FROM usuarios WHERE id = %s", (id,))
+        usuario = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return usuario
 
     @staticmethod
     def buscar_por_email(email):

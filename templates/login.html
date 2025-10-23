@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/form.css">
-    <title>Formulário de Cadastro</title>
+    <title>Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-</head>
 </head>
 <body>
     <div class="container">
-        <form action="/cadastro-usuario" method="post">
+        <form id="login-form">
+            <h2>Login</h2>
             <label for="email">Email: </label>
-            <input type="email" name="email" id="email">
+            <input type="email" name="email" id="email" required>
             <br><br>
             <label for="senha">Senha: </label>
             <input type="password" name="senha" id="senha" required min="6">
@@ -22,7 +21,67 @@
                 <button type="submit">Logar</button>
             </div>
         </form>
+        <p id="message-area"></p>
         <br>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('login-form');
+            const messageArea = document.getElementById('message-area');
+
+            loginForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // <-- CRUCIAL: Impede o envio tradicional
+
+                messageArea.textContent = ''; // Limpa mensagens anteriores
+
+                // Coleta os dados do formulário
+                const formData = new FormData(loginForm);
+                
+                // 1. Faz a requisição POST para a rota /login do Flask
+                fetch('{{ url_for("usuario.login_post") }}', {
+                    method: 'POST',
+                    body: formData // Envia os dados do formulário
+                })
+                .then(response => {
+                    // Retorna o JSON junto com o status da resposta
+                    return response.json().then(data => ({
+                        status: response.status,
+                        body: data
+                    }));
+                })
+                .then(result => {
+                    // 2. Verifica se o login foi bem-sucedido (status 200) e se o token existe
+                    if (result.status === 200 && result.body.access_token) {
+                        
+                        // 🚀 ARMAZENA O TOKEN NO LOCAL STORAGE
+                        localStorage.setItem('access_token', result.body.access_token);
+                        
+                        messageArea.style.color = 'green';
+                        messageArea.textContent = result.body.message || "Login bem-sucedido!";
+                        
+                        // 🚀 REDIRECIONA PARA A ÁREA PROTEGIDA
+                        // Se o login foi bem-sucedido, redireciona diretamente para a lista de usuários.
+                        setTimeout(() => {
+                            // 💡 ALTERAÇÃO: Redireciona diretamente para a rota de listagem protegida
+                            window.location.href = '{{ url_for("usuario.listar_usuarios_protegido") }}'; 
+                        }, 500); 
+                        // ...
+                                                
+                    } else {
+                        // Trata a falha do login (ex: 401 - Email ou senha incorretos)
+                        messageArea.style.color = 'red';
+                        messageArea.textContent = result.body.message || "Erro: Credenciais inválidas.";
+                        localStorage.removeItem('access_token'); // Limpa qualquer token antigo por segurança
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro de rede:', error);
+                    messageArea.style.color = 'red';
+                    messageArea.textContent = "Erro de conexão com o servidor.";
+                });
+            });
+        });
+    </script>
 </body>
 </html>
