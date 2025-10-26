@@ -25,23 +25,58 @@
         <br>
     </div>
 
-    <script>
+   <script>
     document.addEventListener('DOMContentLoaded', () => {
         const loginForm = document.getElementById('login-form');
         const messageArea = document.getElementById('message-area');
 
+        // Função auxiliar para injetar o token no cabeçalho
+        function getAuthHeaders() {
+            const token = localStorage.getItem('access_token');
+            return token ? {
+                'Authorization': `Bearer ${token}`
+            } : {};
+        }
+
+        // Função para carregar uma rota protegida (como /listar-usuarios) com o token
+        function loadProtectedPage(url) {
+            const headers = getAuthHeaders();
+            
+            // 1. Faz uma requisição FETCH para a URL protegida com o token
+            fetch(url, { headers: headers })
+                .then(response => {
+                    if (response.status === 401 || response.status === 403) {
+                        // Token inválido/expirado ou perfil negado -> Limpa e volta para o login
+                        localStorage.removeItem('access_token');
+                        window.location.href = '{{ url_for("usuario.login") }}';
+                        return;
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    if (html) {
+                        // 2. Substitui o conteúdo da página com o HTML retornado
+                        document.documentElement.innerHTML = html;
+                        // Certifique-se de que o título e outros cabeçalhos são atualizados, 
+                        // embora innerHTML geralmente cuide disso.
+                    }
+                })
+                .catch(error => {
+                    console.error("Erro ao carregar página protegida:", error);
+                    messageArea.style.color = 'red';
+                    messageArea.textContent = "Erro de conexão ao redirecionar.";
+                });
+        }
+
         loginForm.addEventListener('submit', function(event) {
-            event.preventDefault(); // <-- CRUCIAL: Impede o envio tradicional
+            event.preventDefault();
+            messageArea.textContent = ''; 
 
-            messageArea.textContent = ''; // Limpa mensagens anteriores
-
-            // Coleta os dados do formulário
             const formData = new FormData(loginForm);
             
-            // 1. Faz a requisição POST para a rota /login do Flask
             fetch('{{ url_for("usuario.login_post") }}', {
                 method: 'POST',
-                body: formData // Envia os dados do formulário
+                body: formData
             })
             .then(response => {
                 // Retorna o JSON junto com o status da resposta
@@ -51,25 +86,33 @@
                 }));
             })
             .then(result => {
-                // 2. Verifica se o login foi bem-sucedido (status 200) e se o token existe
                 if (result.status === 200 && result.body.access_token) {
-
+                    
+                    // 🚀 ARMAZENA O TOKEN
                     localStorage.setItem('access_token', result.body.access_token);
                     
                     messageArea.style.color = 'green';
                     messageArea.textContent = result.body.message || "Login bem-sucedido!";
                     
-                    // **ALTERAÇÃO AQUI:** Redireciona para /dashboard, que verifica o perfil no servidor.
-                    setTimeout(() => {
-                        window.location.href = '{{ url_for("usuario.dashboard") }}'; 
-                    }, 500); 
-                    // ...
-                                
+                    let redirect_url = '{{ url_for("usuario.home") }}'; 
+
+                    if (result.body.perfil === 'admin') {
+                        redirect_url = '{{ url_for("usuario.listar_usuarios_protegido") }}';
+                    }
+                    
+                    // 🚀 ALTERAÇÃO CHAVE AQUI: Para rotas PROTEGIDAS, use a função loadProtectedPage
+                    if (redirect_url === '{{ url_for("usuario.listar_usuarios_protegido") }}') {
+                        setTimeout(() => loadProtectedPage(redirect_url), 500);
+                    } else {
+                        // Para rotas NÃO protegidas (como /home), o redirecionamento normal funciona
+                        setTimeout(() => { window.location.href = redirect_url; }, 500);
+                    }
+                    
                 } else {
-                    // Trata a falha do login (ex: 401 - Email ou senha incorretos)
+                    // Trata a falha do login
                     messageArea.style.color = 'red';
                     messageArea.textContent = result.body.message || "Erro: Credenciais inválidas.";
-                    localStorage.removeItem('access_token'); // Limpa qualquer token antigo por segurança
+                    localStorage.removeItem('access_token');
                 }
             })
             .catch(error => {
@@ -79,7 +122,6 @@
             });
         });
     });
-</script>
-
+    </script>
 </body>
 </html>

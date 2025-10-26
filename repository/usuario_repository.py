@@ -4,7 +4,7 @@ def get_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="root",   # sua senha aqui
+        password="lafj2001",   # sua senha aqui
         database="crud_db"
     )
 
@@ -51,7 +51,7 @@ class UsuarioRepository:
     def buscar_por_id(id):
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SLECT * FROM usuarios WHERE id = %s", (id,))
+        cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
         usuario = cursor.fetchone()
         cursor.close()
         conn.close()

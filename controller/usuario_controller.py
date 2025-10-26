@@ -3,7 +3,14 @@ import uuid
 import bcrypt
 from repository.usuario_repository import UsuarioRepository
 from service.usuario_service import UsuarioService
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    get_jwt_identity, 
+    get_jwt,
+    jwt_required as jwt_required_strict
+)
+from config import BLOCKLIST
 
 usuario_bp = Blueprint('usuario', __name__)
 
@@ -15,9 +22,8 @@ def home():
 def login():
     return render_template("login.html")
 
-@usuario_bp.route("/cadastro") # Nova rota GET para exibir o formulário
+@usuario_bp.route("/cadastro")
 def cadastro_usuario_page():
-    # O seu template de cadastro parece ser o "form.html"
     return render_template("form.html")
 
 @usuario_bp.route("/cadastro-usuario", methods=["POST"])
@@ -36,28 +42,20 @@ def usuarios_json():
     usuarios = UsuarioRepository.carregar_usuarios()
     return jsonify(usuarios)
 
-@usuario_bp.route("/listar-usuarios")
-def listar_usuarios():
-    usuarios = UsuarioRepository.carregar_usuarios()
-    return render_template("usuarios.html", usuarios=usuarios)
-
-@usuario_bp.route("/usuarios/<id>", methods=["DELETE"])
-def excluir_usuario(id):
-    sucesso = UsuarioRepository.deletar_usuario_util(id)
-    if sucesso:
-        return jsonify({"message": "Usuário excluído com sucesso!"}), 200
-    else:
-        return jsonify({"message": "Usuário não encontrado ou erro na exclusão!"}), 404
+# ⚠️ ROTA REMOVIDA: Esta rota '/listar-usuarios' duplicada e não protegida foi removida.
+# @usuario_bp.route("/listar-usuarios")
+# def listar_usuarios():
+#     usuarios = UsuarioRepository.carregar_usuarios()
+#     return render_template("usuarios.html", usuarios=usuarios)
 
 @usuario_bp.route("/editar-usuario/<id>", methods=["GET"])
-@jwt_required()
+@jwt_required_strict()
 def editar_usuario(id):
-    # Permite a edição se for admin OU se o ID for do próprio usuário logado
     current_user_id = get_jwt_identity()
     claims = get_jwt()
-    
+
     if claims.get("perfil") != "admin" and str(current_user_id) != str(id):
-         return jsonify({"message": "Acesso negado! Você só pode editar seu próprio perfil."}), 403
+        return jsonify({"message": "Acesso negado! Você só pode editar seu próprio perfil."}), 403
 
     usuario = UsuarioRepository.buscar_por_id(id)
     if usuario:
@@ -66,9 +64,8 @@ def editar_usuario(id):
         return jsonify({"message": "Usuário não encontrado!"}), 404
     
 @usuario_bp.route("/usuarios/<id>", methods=["PUT"])
-@jwt_required()
+@jwt_required_strict()
 def atualizar_usuario_api(id):
-    # Apenas administradores podem atualizar perfis de outros usuários.
     claims = get_jwt()
 
     if claims.get("perfil") != "admin":
@@ -91,7 +88,35 @@ def atualizar_usuario_api(id):
         return jsonify({"message": "Usuário atualizado com sucesso!"}), 200
     else:
         return jsonify({"message": "Usuário não encontrado ou erro na atualização!"}), 404
+
+@usuario_bp.route("/usuarios/me", methods=["PUT"])
+@jwt_required_strict()
+def atualizar_proprio_usuario_api():
+    """Permite que qualquer usuário logado atualize seu próprio perfil."""
+    current_user_id = get_jwt_identity()
+    novos_dados = request.get_json() 
+
+    if not novos_dados:
+        return jsonify({"message": "Dados inválidos!"}), 400
     
+    # Hashea a senha se ela estiver presente nos dados
+    if 'senha' in novos_dados and novos_dados['senha']:
+        senha_hash = bcrypt.hashpw(
+            novos_dados['senha'].encode('utf-8'), 
+            bcrypt.gensalt()
+        )
+        novos_dados['senha'] = senha_hash.decode('utf-8')
+        
+    # Garante que um usuário normal não possa mudar o próprio perfil via esta rota, se 'perfil' estiver no payload
+    if 'perfil' in novos_dados and get_jwt().get("perfil") != "admin":
+        del novos_dados['perfil']
+
+    sucesso = UsuarioRepository.atualizar_usuario(current_user_id, novos_dados)
+    if sucesso:
+        return jsonify({"message": "Seu perfil foi atualizado com sucesso!"}), 200
+    else:
+        return jsonify({"message": "Erro na atualização do perfil!"}), 404
+
 # ----------------- Login / Logout ----------------- #
 
 @usuario_bp.route("/login", methods=["POST"])
@@ -102,32 +127,38 @@ def login_post():
     usuario = UsuarioRepository.buscar_por_email(email)
     
     if usuario and bcrypt.checkpw(senha.encode('utf-8'), usuario['senha'].encode('utf-8')):
-        # 🚀 SUCESSO: Cria o token JWT.
-        # Identity é o ID do usuário. Claims são informações adicionais (perfil).
         additional_claims = {"perfil": usuario['perfil']}
         access_token = create_access_token(
             identity=usuario['id'], 
             additional_claims=additional_claims
         )
         
-        # Retorna o token para o cliente, que deve incluí-lo nos headers de futuras requisições
+        # 🚨 CORREÇÃO: Retorna o token E o perfil para que o JS possa decidir o redirecionamento.
         return jsonify({
             "message": f"Login bem-sucedido! Bem-vindo, {usuario['nome']}.",
-            "access_token": access_token
+            "access_token": access_token,
+            "perfil": usuario['perfil'] 
         }), 200
     
     return "Email ou senha incorretos!", 401
 
-@usuario_bp.route("/logout")
+@usuario_bp.route("/logout", methods=["POST"])
+@jwt_required_strict()
 def logout():
-    # Para JWT, o logout ocorre no cliente (excluindo o token armazenado).
-    # Esta rota pode ser usada apenas para redirecionar para a página de login.
+    jti = get_jwt()["jti"]
+
+    BLOCKLIST.add(jti)
+
     return redirect(url_for('usuario.login'))
 
-# ----------------- Rotas Protegidas ----------------- #
+@usuario_bp.route("/logout", methods=["GET"])
+def logout_redirect():
+    return render_template("logout.html")
+
+# ----------------- Rotas Protegidas (AGORA FUNCIONAIS COM REDIRECIONAMENTO) ----------------- 
 
 @usuario_bp.route("/usuarios/json", methods=["GET"])
-@jwt_required()
+@jwt_required_strict()
 def buscar_usuarios_json():
     claims = get_jwt()
     
@@ -137,28 +168,31 @@ def buscar_usuarios_json():
     usuarios = UsuarioRepository.carregar_usuarios()
     return jsonify(usuarios)
 
-@usuario_bp.route("/usuarios")
-def buscar_usuarios():
-    if 'usuario_id' not in session:
-        return "Acesso negado! Faça login primeiro.", 401
-    if session["perfil"] != "admin":
-        return "Acesso negado! Você não tem permissão.", 403
-    usuarios = UsuarioRepository.carregar_usuarios()
-    return render_template("usuarios.html", usuarios=usuarios)
+#@usuario_bp.route("/usuarios")
+#def buscar_usuarios():
+#    if 'usuario_id' not in session:
+#        return "Acesso negado! Faça login primeiro.", 401
+#    if session["perfil"] != "admin":
+#        return "Acesso negado! Você não tem permissão.", 403
+#    usuarios = UsuarioRepository.carregar_usuarios()
+#    return render_template("usuarios.html", usuarios=usuarios)
+
 
 @usuario_bp.route("/listar-usuarios", methods=["GET"])
-@jwt_required()
+@jwt_required(optional=True) 
 def listar_usuarios_protegido():
     claims = get_jwt()
     
-    if claims.get("perfil") != "admin":
-        return jsonify({"message": "Acesso negado! Você não tem permissão de administrador."}), 403
-        
+    if not claims:
+
+        return redirect(url_for('usuario.login')) 
+              
     usuarios = UsuarioRepository.carregar_usuarios()
     return render_template("usuarios.html", usuarios=usuarios)
 
+
 @usuario_bp.route("/usuarios/<id>", methods=["DELETE"])
-@jwt_required()
+@jwt_required_strict()
 def excluir_usuario_protegido(id):
     claims = get_jwt()
 
@@ -168,47 +202,3 @@ def excluir_usuario_protegido(id):
     if UsuarioRepository.deletar_usuario_util(id):
         return jsonify({"message": "Usuário excluído com sucesso!"}), 200
     return jsonify({"message": "Usuário não encontrado ou erro na exclusão!"}), 404
-
-@usuario_bp.route("/usuarios/me", methods=["PUT"])
-@jwt_required()
-def atualizar_usuario_protegido():
-    current_user_id = get_jwt_identity()
-    novos_dados = request.get_json() 
-
-    if not novos_dados:
-        return jsonify({"message": "Dados inválidos!"}), 400
-    
-    if 'senha' in novos_dados:
-        senha_hash = bcrypt.hashpw(
-            novos_dados['senha'].encode('utf-8'), 
-            bcrypt.gensalt()
-        )
-        novos_dados['senha'] = senha_hash.decode('utf-8')
-    
-    sucesso = UsuarioRepository.atualizar_usuario(current_user_id, novos_dados)
-    if sucesso:
-        return jsonify({"message": "Seu perfil foi atualizado com sucesso!"}), 200
-    else:
-        return jsonify({"message": "Erro na atualização do perfil!"}), 404
-
-    if claims.get("perfil") != "admin":
-        return jsonify({"message": "Acesso negado! Você não tem permissão de administrador."}), 403
-        
-    return "Bem-vindo à área administrativa!"
-
-@usuario_bp.route("/dashboard")
-@jwt_required()
-def dashboard():
-    """
-    Rota de destino após o login.
-    Redireciona administradores diretamente para a lista de usuários.
-    """
-    claims = get_jwt()
-    
-    if claims.get("perfil") == "admin":
-
-        return redirect(url_for('usuario.listar_usuarios_protegido'))
-    
-    else:
-
-        return redirect(url_for('usuario.home'))
