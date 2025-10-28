@@ -59,3 +59,50 @@ form.addEventListener('submit', function(event) {
         console.error('Erro:', error);
     });
 });
+
+function retornarParaLista() {
+    const token = localStorage.getItem('access_token'); 
+    const url = '/listar-usuarios';
+
+    if (!token) {
+        window.location.href = '/login'; 
+        return;
+    }
+
+    // Replicando a lógica de carregamento de página protegida
+    fetch(url, { 
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}` 
+        }
+    })
+    .then(response => {
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login'; 
+            return;
+        }
+        return response.text();
+    })
+    .then(html => {
+        if (html) {
+            // Injeta o HTML da lista de usuários na página atual
+            document.documentElement.innerHTML = html;
+            history.pushState({}, '', url);
+
+            // IMPORTANTE: Carregue o script de 'usuarios.js' dinamicamente 
+            // para que a função excluirUsuario funcione novamente.
+            const script = document.createElement('script');
+            script.src = '/static/usuarios.js'; // Ajuste o caminho se necessário
+            document.body.appendChild(script);
+
+            // Limpa o script editar.js (opcional, mas boa prática)
+            const currentScript = document.querySelector('script[src*="editar.js"]');
+            if (currentScript) currentScript.remove();
+        }
+    })
+    .catch(error => {
+        console.error("Erro ao retornar para a lista de usuários:", error);
+        alert("Erro ao retornar para a lista de usuários.");
+    });
+}

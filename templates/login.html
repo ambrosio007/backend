@@ -38,8 +38,7 @@
             } : {};
         }
 
-        // Função para carregar uma rota protegida (como /listar-usuarios) com o token
-        function loadProtectedPage(url) {
+       function loadProtectedPage(url) {
             const headers = getAuthHeaders();
             
             // 1. Faz uma requisição FETCH para a URL protegida com o token
@@ -57,8 +56,16 @@
                     if (html) {
                         // 2. Substitui o conteúdo da página com o HTML retornado
                         document.documentElement.innerHTML = html;
-                        // Certifique-se de que o título e outros cabeçalhos são atualizados, 
-                        // embora innerHTML geralmente cuide disso.
+                        
+                        // 🚀 CORREÇÃO: Atualiza a URL do navegador sem recarregar
+                        history.pushState({}, '', url);
+
+                        // 🚀 CORREÇÃO PRINCIPAL: Carrega e executa o script 'usuarios.js' dinamicamente
+                        const script = document.createElement('script');
+                        // Nota: Se você estiver usando Flask (Jinja2), a URL do script
+                        // deve ser "/static/usuarios.js" ou a URL correta do Flask:
+                        script.src = '/static/usuarios.js'; // Mude para a URL correta do seu arquivo!
+                        document.body.appendChild(script);
                     }
                 })
                 .catch(error => {
@@ -66,7 +73,7 @@
                     messageArea.style.color = 'red';
                     messageArea.textContent = "Erro de conexão ao redirecionar.";
                 });
-        }
+       }
 
         loginForm.addEventListener('submit', function(event) {
             event.preventDefault();

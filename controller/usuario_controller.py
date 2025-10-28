@@ -149,11 +149,11 @@ def logout():
 
     BLOCKLIST.add(jti)
 
-    return redirect(url_for('usuario.login'))
+    return jsonify({"message": "Logout bem-sucedido! Token revogado."}), 200
 
-@usuario_bp.route("/logout", methods=["GET"])
+''' @usuario_bp.route("/logout", methods=["GET"])
 def logout_redirect():
-    return render_template("logout.html")
+    return render_template("logout.html") '''
 
 # ----------------- Rotas Protegidas (AGORA FUNCIONAIS COM REDIRECIONAMENTO) ----------------- 
 

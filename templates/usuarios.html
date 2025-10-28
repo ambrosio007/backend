@@ -29,7 +29,7 @@
                             <td>{{ usuario.cpf }}</td>
                             <td>{{ usuario.email }}</td>
                             <td>
-                                <button onclick="window.location.href='/editar-usuario/{{ usuario.id }}'">
+                                <button onclick="carregarPaginaEdicao('{{ usuario.id }}')">
                                     <i class="fa-solid fa-pencil"></i>
                                     Editar
                                 </button>
@@ -47,9 +47,11 @@
         {% endif %}
         <br><br>
         <button onclick="window.location.href='/'">Voltar para o formulário de cadastro</button>
+        <br><br>
+        <button id="logout-btn" onclick="fazerLogout()">Sair (Logout)</button>
     </div>
     
-    <script src="/static/usuarios.js"></script>
+    <script src="{{ url_for('static', filename='usuarios.js') }}"></script>
 
 </body>
 </html>
